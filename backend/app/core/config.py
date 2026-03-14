@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     API_PREFIX: str = "/api"
     DATABASE_URL: str = "postgresql+psycopg://postgres:postgres@localhost:5432/sagepilot"
 
-    TEMPORAL_SERVER_URL: str = "localhost:7233"
+    TEMPORAL_SERVER_URL: str = "ap-northeast-1.aws.api.temporal.io:7233"
     TEMPORAL_NAMESPACE: str = "default"
     TEMPORAL_API_KEY: str | None = None
     TEMPORAL_TASK_QUEUE: str = "sagepilot-task-queue"
