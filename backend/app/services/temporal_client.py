@@ -16,7 +16,21 @@ _client: Client | None = None
 
 async def get_temporal_client() -> Client:
     global _client
+
     if _client is None:
-        server, namespace = _settings_tuple()
-        _client = await Client.connect(server, namespace=namespace)
+        server, namespace, api_key = _settings_tuple()
+
+        connect_kwargs: dict[str, Any] = {
+            "namespace": namespace,
+        }
+
+        if api_key:
+            connect_kwargs["api_key"] = api_key
+            connect_kwargs["tls"] = True
+
+        _client = await Client.connect(
+            server,
+            **connect_kwargs,
+        )
+
     return _client
