@@ -9,9 +9,12 @@ class Settings(BaseSettings):
     APP_NAME: str = "SagePilot API"
     API_PREFIX: str = "/api"
     DATABASE_URL: str = "postgresql+psycopg://postgres:postgres@localhost:5432/sagepilot"
+
     TEMPORAL_SERVER_URL: str = "localhost:7233"
     TEMPORAL_NAMESPACE: str = "default"
+    TEMPORAL_API_KEY: str | None = None
     TEMPORAL_TASK_QUEUE: str = "sagepilot-task-queue"
+
     CORS_ORIGINS: str = "http://localhost:3000"
 
 
