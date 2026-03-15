@@ -29,3 +29,7 @@ async def get_temporal_client() -> Client:
         )
 
     return _client
+
+print("SERVER:", settings.TEMPORAL_SERVER_URL)
+print("NAMESPACE:", settings.TEMPORAL_NAMESPACE)
+print("API_KEY:", settings.TEMPORAL_API_KEY)
