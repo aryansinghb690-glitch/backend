@@ -1,14 +1,16 @@
 from functools import lru_cache
-
 from temporalio.client import Client
-
 from app.core.config import get_settings
 
 
 @lru_cache
 def _settings_tuple() -> tuple[str, str, str | None]:
     settings = get_settings()
-    return settings.TEMPORAL_SERVER_URL, settings.TEMPORAL_NAMESPACE, settings.TEMPORAL_API_KEY
+    return (
+        settings.TEMPORAL_SERVER_URL,
+        settings.TEMPORAL_NAMESPACE,
+        settings.TEMPORAL_API_KEY,
+    )
 
 
 _client: Client | None = None
@@ -16,12 +18,13 @@ _client: Client | None = None
 
 async def get_temporal_client() -> Client:
     global _client
+
     if _client is None:
         settings = get_settings()
-        
-print("SERVER:", settings.TEMPORAL_SERVER_URL)
-print("NAMESPACE:", settings.TEMPORAL_NAMESPACE)
-print("API_KEY:", settings.TEMPORAL_API_KEY)
+
+        print("SERVER:", settings.TEMPORAL_SERVER_URL)
+        print("NAMESPACE:", settings.TEMPORAL_NAMESPACE)
+        print("API_KEY:", settings.TEMPORAL_API_KEY)
 
         _client = await Client.connect(
             settings.TEMPORAL_SERVER_URL,
@@ -33,4 +36,3 @@ print("API_KEY:", settings.TEMPORAL_API_KEY)
         )
 
     return _client
-
