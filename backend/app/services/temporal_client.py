@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from temporalio.client import Client
+from temporalio.client import Client, TLSConfig
 
 from app.core.config import get_settings
 
