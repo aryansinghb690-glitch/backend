@@ -1,4 +1,5 @@
 from datetime import datetime
+import time
 import re
 from typing import Any
 
@@ -13,6 +14,8 @@ router = APIRouter(prefix="/executions", tags=["executions"])
 
 
 LEGACY_HTTP_RESPONSE_KEY_PATTERN = re.compile(r"^response_\d+(?:_\d+)?$")
+PROGRESS_QUERY_INTERVAL_SECONDS = 5.0
+_last_progress_query_at: dict[str, float] = {}
 
 
 def _slugify_node_label(label: str) -> str:
@@ -84,7 +87,13 @@ def _normalize_final_output(value: Any, *, labels_in_order: list[str] | None = N
         return value
     normalized = dict(value)
     normalized.pop("api_response", None)
-    normalized["api_responses"] = _normalize_api_responses(normalized.get("api_responses"), labels_in_order=labels_in_order)
+    normalized_api_responses = _normalize_api_responses(
+        normalized.get("api_responses"), labels_in_order=labels_in_order
+    )
+    if normalized_api_responses is None:
+        normalized.pop("api_responses", None)
+    else:
+        normalized["api_responses"] = normalized_api_responses
     return normalized
 
 
@@ -109,16 +118,20 @@ async def get_execution(run_id: str, db: Session = Depends(get_db)):
 
             if status_name == "running":
                 execution.status = "running"
-                try:
-                    progress = await handle.query("get_progress")
-                    if isinstance(progress, dict):
-                        current_node_id = progress.get("current_node_id")
-                        current_node_type = progress.get("current_node_type")
-                        progress_logs = progress.get("logs")
-                        if isinstance(progress_logs, list):
-                            execution.logs = progress_logs
-                except Exception:
-                    pass
+                now = time.monotonic()
+                last_queried = _last_progress_query_at.get(execution.id, 0.0)
+                if now - last_queried >= PROGRESS_QUERY_INTERVAL_SECONDS:
+                    _last_progress_query_at[execution.id] = now
+                    try:
+                        progress = await handle.query("get_progress")
+                        if isinstance(progress, dict):
+                            current_node_id = progress.get("current_node_id")
+                            current_node_type = progress.get("current_node_type")
+                            progress_logs = progress.get("logs")
+                            if isinstance(progress_logs, list):
+                                execution.logs = progress_logs
+                    except Exception:
+                        pass
             elif status_name == "completed":
                 result = await handle.result()
                 execution.status = "completed"
@@ -129,6 +142,7 @@ async def get_execution(run_id: str, db: Session = Depends(get_db)):
                 )
                 execution.final_output = _normalize_final_output(result.get("final_output"), labels_in_order=labels_in_order)
                 execution.finished_at = datetime.utcnow()
+                _last_progress_query_at.pop(execution.id, None)
             elif status_name == "failed":
                 execution.status = "failed"
                 execution.finished_at = datetime.utcnow()
@@ -136,13 +150,16 @@ async def get_execution(run_id: str, db: Session = Depends(get_db)):
                     await handle.result()
                 except Exception as exc:
                     execution.error = str(exc)
+                _last_progress_query_at.pop(execution.id, None)
             else:
                 execution.status = status_name
                 execution.finished_at = datetime.utcnow()
+                _last_progress_query_at.pop(execution.id, None)
         except Exception as exc:
             execution.status = "failed"
             execution.error = f"Execution polling failed: {exc}"
             execution.finished_at = datetime.utcnow()
+            _last_progress_query_at.pop(execution.id, None)
 
         db.add(execution)
         db.commit()
