@@ -22,16 +22,10 @@ async def get_temporal_client() -> Client:
     if _client is None:
         settings = get_settings()
 
-        print("SERVER:", settings.TEMPORAL_SERVER_URL)
-        print("NAMESPACE:", settings.TEMPORAL_NAMESPACE)
-        print("API_KEY:", settings.TEMPORAL_API_KEY)
-
         _client = await Client.connect(
             settings.TEMPORAL_SERVER_URL,
             namespace=settings.TEMPORAL_NAMESPACE,
-            rpc_metadata={
-                "authorization": f"Bearer {settings.TEMPORAL_API_KEY}"
-            },
+            api_key=settings.TEMPORAL_API_KEY,
             tls=True,
         )
 
