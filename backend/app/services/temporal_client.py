@@ -6,14 +6,9 @@ from app.core.config import get_settings
 
 
 @lru_cache
-def _settings_tuple():
+def _settings_tuple() -> tuple[str, str, str | None]:
     settings = get_settings()
-
-    server = settings.TEMPORAL_SERVER_URL
-    namespace = settings.TEMPORAL_NAMESPACE
-    api_key = getattr(settings, "TEMPORAL_API_KEY", None)
-
-    return server, namespace, api_key
+    return settings.TEMPORAL_SERVER_URL, settings.TEMPORAL_NAMESPACE, settings.TEMPORAL_API_KEY
 
 
 _client: Client | None = None
